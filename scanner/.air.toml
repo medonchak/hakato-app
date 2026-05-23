@@ -1,0 +1,13 @@
+# .air.toml
+[build]
+  cmd = "go run main.go"
+  include_ext = ["go"]
+  exclude_dir = ["assets", "node_modules"]
+  exclude_file = ["*_test.go"]
+  follow_symlink = true
+
+[log]
+  time = true
+
+[color]
+  main = "yellow"

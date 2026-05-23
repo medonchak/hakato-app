@@ -1,0 +1,44 @@
+PORTFOLIO TRACKING TZS
+
+Goal
+- Portfolio UX works at asset level, not isolated contract level.
+- Same asset across several networks is shown as one aggregated position with network breakdown.
+- Tracking works at asset level with optional network overrides.
+- Existing tokens/token_prices/tokens_metadata remain source of truth for positions and analytics; no duplicate portfolio position model is introduced.
+
+Implemented model
+- Raw positions remain in tokens + token_prices.
+- Asset family is derived from canonical symbol: tokens_metadata.symbol -> token_prices.symbol -> contract fallback.
+- New tracking tables:
+  - portfolio_asset_tracking_settings
+  - portfolio_asset_tracking_networks
+- Existing global portfolio switch portfolios.onchain_alerts_enabled remains master gate.
+
+Behavior
+- Portfolio page groups positions by asset key.
+- Each asset card shows:
+  - total amount/value/invested/PnL
+  - tracking profile
+  - tracked network count
+  - network-level breakdown
+- Tracking can be managed:
+  - asset-level ON/OFF
+  - daily report ON/OFF
+  - profile: quiet / balanced / aggressive
+  - per-network ON/OFF override
+- If global portfolio tracking is enabled, missing asset/network rows default to tracked behavior.
+- Analytics worker now reads unified asset tracking settings instead of legacy fragmented token subscription logic.
+
+Profiles
+- quiet: min_usd 75000, spike 4.0x, dominance 20%
+- balanced: min_usd 25000, spike 3.0x, dominance 15%
+- aggressive: min_usd 10000, spike 2.0x, dominance 10%
+- critical override remains 150000 USD
+
+User-facing alert shape
+- Alerts use asset symbol + chain name + human amount formatting.
+- Example: [Onchain WARNING] USDT / Ethereum Binance IN amount=42000 amountUSD=42000.00 ...
+
+Important notes
+- This implementation intentionally reuses current portfolio storage and analytics tables to avoid data duplication/conflicts.
+- Asset grouping is currently symbol-driven. If later stricter canonical asset identity is needed, asset_id/catalog can be introduced without rewriting portfolio positions.

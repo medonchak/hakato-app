@@ -1,0 +1,132 @@
+// func AnalyzeAndSaveTransactions(ctx context.Context, client *ethclient.Client, startTime, endTime time.Time, target common.Address) error {
+// 	totalstats := TxStats{
+// 		TotalGas:    big.NewInt(0), // 🔧 ІНІЦІАЛІЗАЦІЯ
+// 		MaxTotalGas: big.NewInt(0),
+// 		TotalBurned: big.NewInt(0),
+// 	}
+// 	reactions := []ReactionParam{
+// 		{
+// 			ID:          "usdt-transfer-any",
+// 			Creator:     "tg:12345", // кому слати алерт
+// 			Address:     "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+// 			Direction:   "to",         // виклик іде "до" контракту
+// 			MinValueWei: "",           // НЕ ставимо: це ETH, не токени
+// 			MethodID:    "0xa9059cbb", // transfer(address,uint256)
+// 		},
+// 	}
+// 	// 1. Отримуємо latest block
+// 	latestHeader, _ := client.HeaderByNumber(ctx, nil)
+// 	latestTime := time.Unix(int64(latestHeader.Time), 0)
+// 	latestNumber := latestHeader.Number
+
+// 	// 2. Оцінка початкового блоку
+// 	deltaSeconds := latestTime.Unix() - startTime.Unix()
+// 	estimatedBlocksAgo := deltaSeconds / 12
+// 	startBlock := new(big.Int)
+// 	startBlock = startBlock.Sub(latestNumber, big.NewInt(estimatedBlocksAgo))
+// 	maxDelay := 13 * time.Second
+
+// 	for {
+// 		block, err := client.BlockByNumber(ctx, startBlock)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		blockTime := time.Unix(int64(block.Time()), 0).UTC()
+// 		diff := blockTime.Sub(startTime)
+
+// 		//fmt.Printf("Блок %v, час %v, різниця %v\n", block.Number().Uint64(), blockTime, diff)
+
+// 		if diff >= 0 && diff <= maxDelay {
+// 			// ✅ блок у діапазоні [0..13 сек]
+// 			break
+// 		}
+// 		if diff < 0 {
+// 			// Блок ще до startTime — рухаємось вперед
+// 			startBlock.Add(startBlock, big.NewInt(1))
+// 		} else {
+// 			// Блок запізнився більше ніж на 13 секунд — рухаємось назад
+// 			startBlock.Sub(startBlock, big.NewInt(1))
+
+// 			// запобігання виходу за межі
+// 			if startBlock.Sign() <= 0 {
+// 				fmt.Println("❌ Не знайдено блоку у допустимому діапазоні")
+// 			}
+// 		}
+// 	}
+// 	var activityCount int
+// 	txs := types.Transactions{}
+// 	fmt.Printf("Блок %v\n", startBlock)
+// 	bool_history, err_history := IsDateScanned(startTime.Format("2006-01-02"), "history_append_tx.json")
+// 	// 3. Перебираємо блоки
+// 	if !bool_history && err_history == nil {
+// 		for i := new(big.Int).Set(startBlock); ; i.Add(i, big.NewInt(1)) {
+
+// 			block, err := client.BlockByNumber(ctx, i)
+// 			fmt.Printf("▶️ Скануємо блок %v\n", i)
+
+// 			if err != nil {
+// 				errStr := err.Error()
+// 				fmt.Printf("⚠️ Помилка при отриманні блоку %v: %v\n", i, err)
+
+// 				// Якщо помилка містить 429 — затримка і повтор
+// 				if strings.Contains(errStr, "429") || strings.Contains(errStr, "Too Many Requests") {
+// 					fmt.Println("⏳ Rate limit — чекаємо 2 секунди...")
+// 					time.Sleep(2 * time.Second)
+// 					continue
+// 				}
+
+// 				// Інші помилки — просто пропускаємо блок
+// 				time.Sleep(200 * time.Millisecond) // невелика затримка для надійності
+// 				continue
+// 			}
+
+// 			blockTime := time.Unix(int64(block.Time()), 0)
+// 			if blockTime.Before(startTime) {
+// 				continue
+// 			}
+// 			if blockTime.After(endTime) {
+// 				fmt.Printf("Блоки закінчилися в добі\n")
+// 				break
+// 			}
+// 			limit := new(big.Int).Add(startBlock, big.NewInt(20))
+// 			if i.Cmp(limit) >= 0 {
+// 				break
+// 			}
+// 			statsBlock, matches := GetTransactionStatsAndMatches(block.Transactions(), client, reactions)
+// 			for _, m := range matches {
+// 				log.Printf("[match] rule=%s to=%s tx=%s reason=%s",
+// 					m.ParamID, m.Creator, m.Tx.Hash().Hex(), m.Reason)
+// 				// sendAlert(m.Creator, m.ParamID, m.Reason, m.Tx.Hash().Hex())
+// 			}
+// 			totalstats.TotalGas.Add(totalstats.TotalGas, statsBlock.TotalGas)
+// 			totalstats.MaxTotalGas.Add(totalstats.MaxTotalGas, statsBlock.MaxTotalGas)
+// 			totalstats.Date = startTime
+// 			burned := new(big.Int).Mul(block.BaseFee(), big.NewInt(int64(block.GasUsed())))
+// 			totalstats.TotalBurned.Add(totalstats.TotalBurned, burned)
+// 			fmt.Printf("Спалено: %s wei (%s ETH)\n", burned, WeiToEth(burned))
+// 			txs = append(txs, block.Transactions()...)
+// 			fmt.Printf("Кількість транзакцій: %d\n", len(txs))
+// 			SaveTxStatsToFile(totalstats, "stats", startTime)
+// 			if txs != nil {
+// 				IsDateScanned(startTime.Format("2006-01-02"), "history_append_tx.json")
+// 			} else {
+// 				fmt.Printf("Транзакій немає\n")
+// 			}
+// 			time.Sleep(2 * time.Second)
+// 		}
+// 		// 5. Збереження у JSON
+
+// 		data, _ := json.MarshalIndent(txs, "", "  ")
+// 		_ = os.WriteFile("transactions_allblock.json", data, 0644)
+
+// 	}
+
+// 	// 4. Вивід результатів
+// 	fmt.Printf("Дата 1: %v + Дата 2: %v\n", startTime, endTime)
+// 	fmt.Printf("Активність адреси: %d\n", activityCount)
+// 	fmt.Printf("Total Gas Burned: %d ---(%s ETH)\n", totalstats.TotalBurned, WeiToEth(totalstats.TotalBurned))
+// 	fmt.Printf("Total Gas Used: %d ---(%s ETH)\n", totalstats.TotalGas, WeiToEth(totalstats.TotalGas))
+// 	fmt.Printf("Total Potential Gas: %d---(%s ETH)\n", totalstats.MaxTotalGas, WeiToEth(totalstats.MaxTotalGas))
+// 	return nil
+// }

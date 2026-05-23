@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Balloon Pop</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: radial-gradient(circle at 30% 20%, #1a2a3a, #070b10); overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    .hud {
+      position: fixed; top: 14px; right: 16px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      color: #fff;
+      font: 600 16px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      backdrop-filter: blur(8px);
+      user-select: none;
+      display: flex; gap: 10px; align-items: center;
+    }
+    .badge {
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .hint {
+      position: fixed; left: 16px; bottom: 14px;
+      color: rgba(255,255,255,.7);
+      font: 500 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      user-select: none;
+      background: rgba(0,0,0,.20);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+      padding: 8px 10px;
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Score</span>
+    <span class="badge" id="score">0</span>
+  </div>
+  <div class="hint">Клікни по кульці, щоб лопнула 🎈 (+очки)</div>
+  <canvas id="c"></canvas>
+
+  <script>
+    // ===== Canvas setup =====
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d", { alpha: true });
+    const scoreEl = document.getElementById("score");
+
+    function resize() {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      canvas.width = Math.floor(innerWidth * dpr);
+      canvas.height = Math.floor(innerHeight * dpr);
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+    }
+    addEventListener("resize", resize, { passive: true });
+    resize();
+
+    // ===== Helpers =====
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+    // Nice palettes (vibrant but not neon)
+    const PALETTES = [
+      ["#ff4d6d", "#ffb3c1"], // pink
+      ["#4cc9f0", "#bde0fe"], // sky
+      ["#ffd166", "#ffe8a3"], // gold
+      ["#7c4dff", "#cbb2ff"], // purple
+      ["#06d6a0", "#b7f4df"], // mint
+      ["#ff6b35", "#ffd5c2"], // orange
+      ["#00b4d8", "#caf0f8"], // cyan
+      ["#f72585", "#ffbde0"], // magenta
+    ];
+
+    // ===== Game state =====
+    let score = 0;
+    let last = performance.now();
+    const balloons = [];
+    const pops = [];
+    const floatTexts = [];
+    const stars = [];
+
+    // Background stars for vibe
+    function initStars() {
+      stars.length = 0;
+      const count = Math.floor((innerWidth * innerHeight) / 25000);
+      for (let i = 0; i < clamp(count, 30, 120); i++) {
+        stars.push({
+          x: Math.random() * innerWidth,
+          y: Math.random() * innerHeight,
+          r: rand(0.6, 1.6),
+          a: rand(0.25, 0.9),
+          tw: rand(0.6, 1.8),
+          ph: rand(0, Math.PI * 2),
+        });
+      }
+    }
+    initStars();
+    addEventListener("resize", initStars, { passive: true });
+
+    function addScore(points) {
+      score += points;
+      scoreEl.textContent = String(score);
+    }
+
+    // ===== Balloon object =====
+    function spawnBalloon() {
+      const [c1, c2] = pick(PALETTES);
+      const r = rand(26, 48);               // radius
+      const x = rand(r + 12, innerWidth - r - 12);
+      const y = innerHeight + r + rand(0, 120);
+      const speed = rand(40, 110);          // px/s
+      const swayAmp = rand(10, 26);
+      const swaySpeed = rand(0.8, 1.6);
+      const phase = rand(0, Math.PI * 2);
+
+      // points: small balloons give more points
+      const points = Math.round(clamp(120 - r * 1.4, 30, 90));
+
+      balloons.push({
+        x, y, r,
+        c1, c2,
+        speed,
+        swayAmp, swaySpeed, phase,
+        wobble: rand(0.95, 1.08),
+        stringLen: rand(70, 120),
+        alive: true,
+        points,
+      });
+    }
+
+    // initial balloons
+    for (let i = 0; i < 12; i++) spawnBalloon();
+
+    // continuous spawn
+    let spawnAcc = 0;
+
+    // ===== Drawing: Balloon =====
+    function drawBalloon(b) {
+      const t = performance.now() * 0.001;
+      const wobX = Math.sin(t * b.swaySpeed + b.phase) * b.swayAmp;
+      const wobY = Math.cos(t * (b.swaySpeed * 0.7) + b.phase) * 6;
+
+      const cx = b.x + wobX;
+      const cy = b.y + wobY;
+
+      // Balloon shape (slightly oval)
+      const rx = b.r * 0.98;
+      const ry = b.r * 1.18 * b.wobble;
+
+      // Gradient fill
+      const g = ctx.createRadialGradient(cx - rx * 0.35, cy - ry * 0.35, b.r * 0.2, cx, cy, b.r * 1.5);
+      g.addColorStop(0, b.c2);
+      g.addColorStop(0.55, b.c1);
+      g.addColorStop(1, "#111");
+
+      // Soft shadow
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.35)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 10;
+
+      // Main balloon
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, Math.sin(t + b.phase) * 0.06, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outline
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(255,255,255,.18)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, Math.sin(t + b.phase) * 0.06, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Highlight (gloss)
+      ctx.fillStyle = "rgba(255,255,255,.22)";
+      ctx.beginPath();
+      ctx.ellipse(cx - rx * 0.35, cy - ry * 0.25, rx * 0.18, ry * 0.35, -0.35, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Decorative stripes
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.ellipse(cx + i * 6, cy + ry * 0.10, rx * 0.82, ry * 0.92, 0, Math.PI * 0.15, Math.PI * 0.55);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Knot
+      ctx.fillStyle = "rgba(255,255,255,.18)";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + ry * 0.86);
+      ctx.lineTo(cx - 8, cy + ry * 1.03);
+      ctx.lineTo(cx + 8, cy + ry * 1.03);
+      ctx.closePath();
+      ctx.fill();
+
+      // String
+      ctx.strokeStyle = "rgba(255,255,255,.22)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const sx = cx;
+      const sy = cy + ry * 1.02;
+      const ex = cx + Math.sin(t * 1.2 + b.phase) * 18;
+      const ey = sy + b.stringLen;
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(cx - 10, sy + b.stringLen * 0.55, ex, ey);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Save current drawn center for hit test
+      b._cx = cx;
+      b._cy = cy;
+      b._rx = rx;
+      b._ry = ry;
+    }
+
+    // ===== Pop particles =====
+    function createPop(b) {
+      const count = Math.floor(rand(16, 26));
+      for (let i = 0; i < count; i++) {
+        const ang = rand(0, Math.PI * 2);
+        const sp = rand(80, 240);
+        pops.push({
+          x: b._cx, y: b._cy,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          r: rand(2, 4.5),
+          a: 1,
+          col: (Math.random() < 0.65) ? "rgba(255,255,255,.9)" : b.c2,
+          life: rand(0.35, 0.6)
+        });
+      }
+
+      floatTexts.push({
+        x: b._cx,
+        y: b._cy,
+        vy: -40,
+        a: 1,
+        text: `+${b.points}`,
+        life: 0.9
+      });
+    }
+
+    function updatePops(dt) {
+      for (let i = pops.length - 1; i >= 0; i--) {
+        const p = pops[i];
+        p.life -= dt;
+        p.a = clamp(p.life / 0.6, 0, 1);
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 520 * dt; // gravity
+        p.vx *= Math.pow(0.2, dt);
+        if (p.life <= 0) pops.splice(i, 1);
+      }
+      for (let i = floatTexts.length - 1; i >= 0; i--) {
+        const f = floatTexts[i];
+        f.life -= dt;
+        f.a = clamp(f.life / 0.9, 0, 1);
+        f.y += f.vy * dt;
+        if (f.life <= 0) floatTexts.splice(i, 1);
+      }
+    }
+
+    function drawPops() {
+      // particles
+      for (const p of pops) {
+        ctx.globalAlpha = p.a;
+        ctx.fillStyle = p.col;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // floating score text
+      for (const f of floatTexts) {
+        ctx.globalAlpha = f.a;
+        ctx.font = "700 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.shadowColor = "rgba(0,0,0,.35)";
+        ctx.shadowBlur = 12;
+        ctx.fillText(f.text, f.x + 8, f.y - 8);
+        ctx.shadowBlur = 0;
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ===== Background stars =====
+    function drawStars(timeSec) {
+      for (const s of stars) {
+        const tw = (Math.sin(timeSec * s.tw + s.ph) + 1) * 0.5; // 0..1
+        const a = s.a * (0.6 + tw * 0.4);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ===== Hit test =====
+    function hitBalloon(mx, my, b) {
+      // point-in-ellipse
+      const dx = (mx - b._cx) / b._rx;
+      const dy = (my - b._cy) / b._ry;
+      return (dx * dx + dy * dy) <= 1;
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      // topmost first (newer balloons usually look on top)
+      for (let i = balloons.length - 1; i >= 0; i--) {
+        const b = balloons[i];
+        if (!b.alive) continue;
+        if (b._cx == null) continue;
+
+        if (hitBalloon(mx, my, b)) {
+          b.alive = false;
+          addScore(b.points);
+          createPop(b);
+          // replace popped balloon quickly
+          spawnBalloon();
+          break;
+        }
+      }
+    }, { passive: true });
+
+    // ===== Main loop =====
+    function tick(now) {
+      const dt = Math.min(0.033, (now - last) / 1000);
+      last = now;
+
+      // clear
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+      // background
+      const t = now * 0.001;
+      drawStars(t);
+
+      // spawn logic
+      spawnAcc += dt;
+      const spawnEvery = 0.55; // seconds
+      while (spawnAcc >= spawnEvery) {
+        spawnAcc -= spawnEvery;
+        if (balloons.length < 26) spawnBalloon();
+      }
+
+      // update balloons
+      for (let i = balloons.length - 1; i >= 0; i--) {
+        const b = balloons[i];
+        if (!b.alive) {
+          balloons.splice(i, 1);
+          continue;
+        }
+        b.y -= b.speed * dt;
+        // if out of screen -> respawn
+        if (b.y < -b.r - 140) {
+          balloons.splice(i, 1);
+          spawnBalloon();
+        }
+      }
+
+      // draw balloons
+      for (const b of balloons) drawBalloon(b);
+
+      // pop fx
+      updatePops(dt);
+      drawPops();
+
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

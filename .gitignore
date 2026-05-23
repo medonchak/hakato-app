@@ -1,0 +1,33 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# DB backups
+*.sql
+
+# Environment
+.env
+.env.*
+
+# Go build cache
+scanner/scanner
+scanner/scanner.exe
+
+# Node
+node_modules/
+mini-app/build/
+mini-app/new-des-crypto/build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / notes
+git.txt

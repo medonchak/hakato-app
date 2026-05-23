@@ -1,0 +1,68 @@
+/* ======== Глобальні адаптивні налаштування ======== */
+
+:root {
+  --pad-md: 16px;
+  --pad-sm: 10px;
+  --radius: 16px;
+  --radius-sm: 12px;
+}
+
+/* Телефони (до 480px) */
+@media (max-width: 480px) {
+  .pf-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .pf-form button {
+    grid-column: span 2;
+    width: 100%;
+  }
+
+  .pf-card {
+    padding: 14px;
+  }
+
+  .pf-symbol {
+    font-size: 22px !important;
+  }
+
+  .pf-pl {
+    font-size: 18px !important;
+  }
+
+  .pf-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    font-size: 13px;
+  }
+
+  .pf-stats {
+    gap: 8px;
+  }
+
+  .pf-stat {
+    padding: 10px 14px;
+    min-width: 95px;
+  }
+}
+
+/* Дуже малі екрани (360px-400px) */
+@media (max-width: 400px) {
+  .pf-form input {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .pf-form button {
+    padding: 12px;
+  }
+
+  .pf-card {
+    padding: 12px;
+  }
+
+  .pf-grid div {
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "short_name": "Hakato",
+  "name": "Hakato — AI Agent on Mantle",
+  "description": "On-chain AI trading agent with anomaly detection on Mantle Network",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#06b6d4",
+  "background_color": "#0f172a",
+  "categories": ["finance", "utilities"],
+  "lang": "uk"
+}

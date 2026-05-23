@@ -1,0 +1,165 @@
+SERVER ANALYTICS CHECKLIST
+
+1. Оновлення бекенду
+
+cd ~/mini_ap_research
+git pull origin main
+cd ~/mini_ap_research/scanner
+go build -o myapi .
+sudo systemctl restart myapi
+sudo systemctl status myapi --no-pager -l
+
+
+2. Коли потрібно оновлювати статику
+
+- Якщо зміни були тільки в scanner/, статику оновлювати не потрібно.
+- Якщо зміни були в mini-app/, тоді:
+
+cd ~/mini_ap_research/mini-app
+npm ci
+npm run build
+
+- Після цього викласти новий build у папку, яку віддає nginx.
+- У Telegram WebApp після деплою зробити hard reload / перевідкрити застосунок.
+
+
+3. Перевірка, що сервіс живий
+
+sudo systemctl status myapi --no-pager -l
+sudo journalctl -u myapi -n 120 --no-pager
+sudo journalctl -u myapi -f
+
+Що шукати:
+- DB ERROR
+- polling head error
+- failed to get block
+- Addresses tx=... err=not found
+- Imported ... tokens with onchain_tracking=true
+
+
+4. Перевірка імпорту tokens_metadata
+
+sudo journalctl -u myapi -n 120 --no-pager | grep Imported
+
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS tokens_meta FROM tokens_metadata;"
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS tracked FROM tokens_metadata WHERE onchain_tracking=1;"
+
+Що означає:
+- tokens_meta = 0 -> таблиця порожня, імпорт не відпрацював
+- tracked = 0 -> аналітиці нема що трекати
+
+
+5. Перевірка, що ончейн-аналітика реально пишеться
+
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS events FROM token_transfer_events;"
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS hourly FROM token_hourly_activity;"
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS metrics FROM token_hourly_metrics;"
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT FROM_UNIXTIME(MAX(hour_ts)) AS last_hour FROM token_hourly_activity;"
+
+Додатково:
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS hourly, FROM_UNIXTIME(MAX(hour_ts)) AS last_hour FROM token_hourly_activity;"
+sleep 60
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS hourly, FROM_UNIXTIME(MAX(hour_ts)) AS last_hour FROM token_hourly_activity;"
+
+Що означає:
+- events = 0 -> трансфери не збираються
+- hourly = 0 -> погодинна агрегація не пишеться
+- metrics = 0 при hourly > 0 -> enrichment не допрацьовує
+- last_hour старий -> ingestion зупинився або завис
+
+
+6. Перевірка API без фронта
+
+curl -s "http://127.0.0.1:8080/api/market/token-activity?chain_id=1&period=1h&limit=5"
+curl -s "http://127.0.0.1:8080/api/market/token-activity?chain_id=1&period=24h&limit=5"
+curl -i "http://127.0.0.1:8080/api/token/dashboard?chainId=1&token=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+
+Публічна перевірка:
+curl -s "https://next-gen-analytics.pp.ua/api/market/token-activity?chain_id=1&period=1h&limit=5"
+curl -i "https://next-gen-analytics.pp.ua/api/token/dashboard?chainId=1&token=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+
+
+7. Якщо Token Activity / Live показує нулі
+
+Перевірити:
+- чи не старий last_hour у token_hourly_activity
+- чи є свіжі рядки за останню 1h / 24h
+- чи нема в логах одного і того самого failed to get block
+
+SQL:
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT FROM_UNIXTIME(MAX(hour_ts)) AS last_hour FROM token_hourly_activity;"
+
+Пояснення:
+- фронт для Token Activity бере список з /api/market/token-activity
+- цей роут читає tokens_metadata + token_hourly_activity + token_hourly_metrics
+- якщо за останню 1h/24h нема свіжих рядків, UI покаже нулі
+
+
+8. Якщо в логах багато 'failed to get block' або 'Addresses tx=... err=not found'
+
+Це означає:
+- процес myapi може бути active (running)
+- але RPC не віддає частину блоків / receipt / tx
+- ingestion може не оновлювати дані в БД
+
+Поточний фікс у коді:
+- pollLoop тепер після 3 невдалих спроб пропускає проблемний блок
+- це не дає аналітиці зависнути назавжди на одному block number
+
+Після оновлення бекенду перевірити:
+sudo journalctl -u myapi -f
+
+Очікування:
+- один і той самий block number не повинен повторюватися безкінечно
+- last_hour у token_hourly_activity має піти вперед
+
+
+9. Якщо git pull на сервері блокується локальними змінами
+
+cd ~/mini_ap_research
+git stash push -m "server-local"
+git pull origin main
+git stash pop
+
+
+10. Якщо myapi не стартує через порт 8080
+
+sudo systemctl stop myapi
+sudo ss -ltnp | grep :8080
+sudo pkill -f "/root/mini_ap_research/scanner/myapi"
+sleep 1
+sudo ss -ltnp | grep :8080 || echo "8080 free"
+sudo systemctl start myapi
+sudo systemctl status myapi --no-pager -l
+
+Важливо:
+- не запускати ./myapi через nohup паралельно з systemd
+
+
+11. Якщо myapi не стартує через DB ERROR 1227
+
+Причина:
+- у DSN лишився sql_log_bin=0
+- для цього потрібні привілеї SUPER / SYSTEM_VARIABLES_ADMIN
+
+Що робити:
+- прибрати sql_log_bin=0 з DSN
+- перезібрати scanner
+- restart myapi
+
+Перевірка:
+grep -RIn "sql_log_bin" ~/mini_ap_research/scanner
+
+
+12. Мінімальний щоденний чек
+
+sudo systemctl status myapi --no-pager -l
+mysql -u miniapp -p -e "USE \`mini-app\`; SELECT COUNT(*) AS hourly, FROM_UNIXTIME(MAX(hour_ts)) AS last_hour FROM token_hourly_activity;"
+curl -s "http://127.0.0.1:8080/api/market/token-activity?chain_id=1&period=1h&limit=5"
+
+Якщо:
+- service active
+- last_hour свіжий
+- API повертає не порожній список
+
+то бекенд аналітики працює нормально.
