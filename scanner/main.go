@@ -584,7 +584,7 @@ func All_gas_Eth_EtherScan(address common.Address) *Result {
 		} `json:"result"`
 	}
 
-	apiKey := "JPRXBXFXFDHY5UG6US7JEUQ7EEHTNHQDGB"
+	apiKey := os.Getenv("ETHERSCAN_API_KEY")
 
 	// 🔹 Etherscan API V2 (ETH mainnet = chainid 1)
 	url := fmt.Sprintf(

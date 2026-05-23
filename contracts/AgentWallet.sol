@@ -62,6 +62,8 @@ contract AgentWallet {
         uint256 tradeUSD
     );
 
+    event AgentChanged(address indexed oldAgent, address indexed newAgent);
+    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
     event Deposited(address indexed token, uint256 amount);
     event Withdrawn(address indexed token, uint256 amount, address to);
 
@@ -149,6 +151,7 @@ contract AgentWallet {
     }
 
     function setAgent(address _agent) external onlyOwner {
+        emit AgentChanged(agent, _agent);
         agent = _agent;
     }
 
@@ -160,6 +163,7 @@ contract AgentWallet {
 
     function transferOwnership(address newOwner) external onlyOwner {
         require(newOwner != address(0), "zero address");
+        emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
 

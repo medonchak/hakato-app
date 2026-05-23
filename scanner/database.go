@@ -1106,8 +1106,9 @@ func DB_GetAllTokenPrices() ([]TokenPriceRow, error) {
 		); err != nil {
 			return nil, err
 		}
+		res = append(res, t)
 	}
-	return res, nil
+	return res, rows.Err()
 }
 
 func DB_UpdateTokenPrice(chainID int, contract, symbol string, price float64) error {

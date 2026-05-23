@@ -33,7 +33,7 @@ type AlertRule struct {
 	ID          string `json:"id"`
 	Creator     string `json:"creator,omitempty"` // тут ти кладеш telegram_id як string
 	Address     string `json:"address"`
-	AlertChaine string `json:"alertChaine"`
+	AlertChain string `json:"alertChain"`
 	Anomalies   *struct {
 		Enabled         bool   `json:"enabled"`
 		MinGasPriceGwei string `json:"minGasPriceGwei"`
@@ -558,7 +558,7 @@ func CreateAlertRuleHandler(w http.ResponseWriter, r *http.Request) {
 		RuleID      int64           `json:"ruleId"` // ID правила ОБОВ'ЯЗКОВО
 		Creator     string          `json:"creator"`
 		Address     string          `json:"address"`
-		AlertChaine string          `json:"alertChaine"`
+		AlertChain string          `json:"alertChain"`
 		Anomalies   json.RawMessage `json:"anomalies"`
 		NFT         json.RawMessage `json:"nft"`
 		Swap        json.RawMessage `json:"swap"`
@@ -632,13 +632,13 @@ func CreateAlertRuleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var chain int
 
-	switch in.AlertChaine {
+	switch in.AlertChain {
 	case "ETH":
 		chain = 1
 	case "BSC":
 		chain = 56
 	default:
-		log.Printf("[ALERT][ERR] unknown chain: %s", in.AlertChaine)
+		log.Printf("[ALERT][ERR] unknown chain: %s", in.AlertChain)
 		chain = 1
 	}
 	var swap *SwapRule
@@ -752,7 +752,7 @@ func CreateAlertRuleHandler(w http.ResponseWriter, r *http.Request) {
 		ID:          genID(),
 		Creator:     in.Creator,
 		Address:     addr,
-		AlertChaine: in.AlertChaine,
+		AlertChain: in.AlertChain,
 		Anomalies:   anomalies,
 		NFT:         nft,
 		Swap:        swap,

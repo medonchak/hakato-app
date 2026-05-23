@@ -195,7 +195,7 @@ export function AgentDashboard() {
                   )}
                   <div>
                     <p className="text-xs font-semibold text-slate-800">
-                      {t.signal_type} {t.token}
+                      {t.signal_type} {t.token_symbol || activeToken}
                     </p>
                     <p className="text-[10px] text-slate-400">
                       {new Date(t.created_at).toLocaleString('uk-UA', {

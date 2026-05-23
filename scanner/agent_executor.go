@@ -342,33 +342,41 @@ LIMIT 100
 	defer rows.Close()
 
 	type row struct {
-		ID         int64           `json:"id"`
-		ChainID    int64           `json:"chain_id"`
-		Token      string          `json:"token"`
-		Symbol     string          `json:"token_symbol"`
-		SignalType string          `json:"signal_type"`
-		Reason     string          `json:"reason"`
-		Confidence float64         `json:"confidence"`
-		PriceUSD   float64         `json:"price_usd"`
-		VWAP       float64         `json:"vwap"`
-		SizeUSD    sql.NullFloat64 `json:"size_usd"`
-		TxHash     sql.NullString  `json:"tx_hash"`
-		Executed   bool            `json:"executed"`
-		CreatedAt  time.Time       `json:"created_at"`
+		ID         int64    `json:"id"`
+		ChainID    int64    `json:"chain_id"`
+		Token      string   `json:"token"`
+		Symbol     string   `json:"token_symbol"`
+		SignalType string   `json:"signal_type"`
+		Reason     string   `json:"reason"`
+		Confidence float64  `json:"confidence"`
+		PriceUSD   float64  `json:"price_usd"`
+		VWAP       float64  `json:"vwap"`
+		SizeUSD    *float64 `json:"size_usd"`
+		TxHash     *string  `json:"tx_hash"`
+		Executed   bool     `json:"executed"`
+		CreatedAt  time.Time `json:"created_at"`
 	}
 
 	var out []row
 	for rows.Next() {
 		var item row
 		var exec int
+		var sizeUSD sql.NullFloat64
+		var txHash sql.NullString
 		if err := rows.Scan(&item.ID, &item.ChainID, &item.Token, &item.Symbol,
 			&item.SignalType, &item.Reason, &item.Confidence,
-			&item.PriceUSD, &item.VWAP, &item.SizeUSD, &item.TxHash,
+			&item.PriceUSD, &item.VWAP, &sizeUSD, &txHash,
 			&exec, &item.CreatedAt,
 		); err != nil {
 			continue
 		}
 		item.Executed = exec == 1
+		if sizeUSD.Valid {
+			item.SizeUSD = &sizeUSD.Float64
+		}
+		if txHash.Valid {
+			item.TxHash = &txHash.String
+		}
 		out = append(out, item)
 	}
 
@@ -440,6 +448,10 @@ func HandleAgentPosition(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(&p.Token, &p.Symbol, &p.SizeUSD, &p.EntryPrice, &p.PnlUSD, &p.UpdatedAt); err == nil {
 			out = append(out, p)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
 	if len(out) == 0 {

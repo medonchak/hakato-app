@@ -30,7 +30,7 @@ export default function AlertForm(props) {
   const [swapEnabled, setSwapEnabled] = useState(false);
   const [swapMin, setSwapMin] = useState("");
   const [swapCurr, setSwapCurr] = useState("USDT");
-  const [alertChaine, setalertChaine] = useState("ETH");
+  const [alertChain, setAlertChain] = useState("ETH");
   const [swapTokens, setSwapTokens] = useState([]);      // масив 0x...
   const [swapTokenInput, setSwapTokenInput] = useState("");
 
@@ -152,7 +152,7 @@ export default function AlertForm(props) {
       creator: String(telegramId),
       ruleId: props.ruleId,
       address,
-      alertChaine,
+      alertChain,
        // 0x...
       // якщо увімкнуто "Аномальні" — надсилаємо тільки їх
       anomalies: anomalyEnabled ? {
@@ -228,7 +228,7 @@ export default function AlertForm(props) {
       {/* Мережа */}
       <FormControl size="small" sx={{ mb: 2, minWidth: 110 }}>
             <InputLabel sx={S.inputLabel}>Network</InputLabel>
-            <Select value={alertChaine} label="Currency" onChange={(e)=>setalertChaine(e.target.value)}  sx={S.select}>
+            <Select value={alertChain} label="Currency" onChange={(e)=>setAlertChain(e.target.value)}  sx={S.select}>
               <MenuItem value="ETH">Ethereum</MenuItem>
               <MenuItem value="BSC">BNB Chain</MenuItem>
             </Select>
@@ -263,7 +263,7 @@ export default function AlertForm(props) {
           <FormControl size="small" sx={{ minWidth: 110 }}>
             <InputLabel sx={S.inputLabel}>Currency</InputLabel>
             <Select value={swapCurr} label="Currency" onChange={(e)=>setSwapCurr(e.target.value)} disabled={!swapEnabled || disabledOthers} sx={S.select}>
-              {alertChaine=='ETH' ? <MenuItem value="ETH">ETH</MenuItem> :
+              {alertChain=='ETH' ? <MenuItem value="ETH">ETH</MenuItem> :
               <MenuItem value="BNB">BNB</MenuItem>}
               <MenuItem value="USDT">USDT</MenuItem>
             </Select>
@@ -295,7 +295,7 @@ export default function AlertForm(props) {
       </Box>
 
       {/* FINANCE TRANSFERS (NATIVE / STABLE) */}
-      {(alertChaine === "ETH" || alertChaine === "BSC") && (
+      {(alertChain === "ETH" || alertChain === "BSC") && (
       <Box sx={{ mb: 2 }}>
         <FormControlLabel
           control={
@@ -331,7 +331,7 @@ export default function AlertForm(props) {
                   onChange={(e) => setSellNative(e.target.checked)}
                 />
               }
-              label={alertChaine == "ETH" ? "Sell ETH" : "Sell BNB"}
+              label={alertChain == "ETH" ? "Sell ETH" : "Sell BNB"}
             />
 
             <FormControlLabel
@@ -341,7 +341,7 @@ export default function AlertForm(props) {
                   onChange={(e) => setBuyNative(e.target.checked)}
                 />
               }
-              label={alertChaine == "ETH" ? "Buy ETH" : "Buy BNB"}
+              label={alertChain == "ETH" ? "Buy ETH" : "Buy BNB"}
             />
 
             <FormControlLabel
@@ -351,7 +351,7 @@ export default function AlertForm(props) {
                   onChange={(e) => setBuyAnyNative(e.target.checked)}
                 />
               }
-              label={alertChaine == "ETH" ? "Buy tokens for ETH" : "Buy tokens for BNB"} 
+              label={alertChain == "ETH" ? "Buy tokens for ETH" : "Buy tokens for BNB"} 
             />
 
             <FormControlLabel

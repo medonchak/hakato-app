@@ -22,7 +22,7 @@ export function StyledAlertFilterForm({ ruleId, userId, onSaved }) {
   };
 
   const [address, setAddress] = useState('');
-  const [alertChaine, setAlertChaine] = useState('ETH');
+  const [alertChain, setAlertChain] = useState('ETH');
   const [swapEnabled, setSwapEnabled] = useState(false);
   const [swapMin, setSwapMin] = useState('');
   const [swapCurr, setSwapCurr] = useState('USDT');
@@ -50,7 +50,7 @@ export function StyledAlertFilterForm({ ruleId, userId, onSaved }) {
 
   const resetForm = () => {
     setAddress('');
-    setAlertChaine('ETH');
+    setAlertChain('ETH');
     setSwapEnabled(false);
     setSwapMin('');
     setSwapCurr('USDT');
@@ -95,7 +95,7 @@ export function StyledAlertFilterForm({ ruleId, userId, onSaved }) {
       creator: String(creatorForServer),
       ruleId: ruleIdNum,
       address: address.trim(),
-      alertChaine
+      alertChain
     };
 
     if (swapEnabled) {
@@ -142,8 +142,8 @@ export function StyledAlertFilterForm({ ruleId, userId, onSaved }) {
       <Card className="p-3 space-y-2">
         <p className="text-xs font-semibold text-slate-600">{t('network')}</p>
         <div className="grid grid-cols-2 gap-2">
-          <Button variant={alertChaine === 'ETH' ? 'primary' : 'secondary'} onClick={() => setAlertChaine('ETH')}>Ethereum</Button>
-          <Button variant={alertChaine === 'BSC' ? 'primary' : 'secondary'} onClick={() => setAlertChaine('BSC')}>BSC</Button>
+          <Button variant={alertChain === 'ETH' ? 'primary' : 'secondary'} onClick={() => setAlertChain('ETH')}>Ethereum</Button>
+          <Button variant={alertChain === 'BSC' ? 'primary' : 'secondary'} onClick={() => setAlertChain('BSC')}>BSC</Button>
         </div>
       </Card>
 
@@ -158,8 +158,8 @@ export function StyledAlertFilterForm({ ruleId, userId, onSaved }) {
             <Input label={t('swap_minimum')} type="number" value={swapMin} onChange={(event) => setSwapMin(event.target.value)} />
             <div className="grid grid-cols-2 gap-2">
               <Button variant={swapCurr === 'USDT' ? 'primary' : 'secondary'} onClick={() => setSwapCurr('USDT')}>USDT</Button>
-              <Button variant={swapCurr === (alertChaine === 'ETH' ? 'ETH' : 'BNB') ? 'primary' : 'secondary'} onClick={() => setSwapCurr(alertChaine === 'ETH' ? 'ETH' : 'BNB')}>
-                {alertChaine === 'ETH' ? 'ETH' : 'BNB'}
+              <Button variant={swapCurr === (alertChain === 'ETH' ? 'ETH' : 'BNB') ? 'primary' : 'secondary'} onClick={() => setSwapCurr(alertChain === 'ETH' ? 'ETH' : 'BNB')}>
+                {alertChain === 'ETH' ? 'ETH' : 'BNB'}
               </Button>
             </div>
             <Input label={t('swap_token_contract')} placeholder="0x..." value={swapTokenInput} onChange={(event) => setSwapTokenInput(event.target.value)} />
