@@ -57,7 +57,8 @@ export function useWallet() {
   const [error, setError]       = useState(null);
   const [balancesError, setBalancesError] = useState(null);
 
-  const provider = typeof window !== 'undefined' ? window.ethereum : null;
+  // Re-read window.ethereum each render — MetaMask may inject after first paint
+  const provider = (typeof window !== 'undefined' && window.ethereum) ? window.ethereum : null;
 
   const fetchBalances = useCallback(async (addr) => {
     if (!provider || !addr) return;
@@ -113,7 +114,9 @@ export function useWallet() {
   }, [provider]);
 
   const connect = useCallback(async () => {
-    if (!provider) {
+    // Re-check at call time in case MetaMask injected after initial render
+    const eth = (typeof window !== 'undefined' && window.ethereum) ? window.ethereum : provider;
+    if (!eth) {
       setError('MetaMask не знайдено. Встанови розширення.');
       return;
     }
@@ -121,17 +124,17 @@ export function useWallet() {
     setError(null);
     try {
       // Connect account first — always works regardless of current network
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const accounts = await eth.request({ method: 'eth_requestAccounts' });
       const addr = accounts[0];
       setAddress(addr);
 
-      const cid = await provider.request({ method: 'eth_chainId' });
+      const cid = await eth.request({ method: 'eth_chainId' });
       setChainId(cid);
 
       // Try to switch to Mantle — non-fatal; wrong-network UI handles it
       try {
         await switchToMantle();
-        const newCid = await provider.request({ method: 'eth_chainId' });
+        const newCid = await eth.request({ method: 'eth_chainId' });
         setChainId(newCid);
       } catch (switchErr) {
         console.warn('[useWallet] network switch failed:', switchErr.message);
