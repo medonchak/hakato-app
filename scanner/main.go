@@ -812,7 +812,9 @@ func RunActiveAnalytics(ctx context.Context, client *ethclient.Client, out chan<
 		}
 		id, _ := client.ChainID(ctx)
 		head, _ := client.HeaderByNumber(ctx, nil)
-		log.Printf("[rpc] chain=%v latest=%v", id, head.Number)
+		if head != nil {
+			log.Printf("[rpc] chain=%v latest=%v", id, head.Number)
+		}
 
 		// підписка працює
 		for {

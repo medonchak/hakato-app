@@ -1033,7 +1033,7 @@ func ListTokenPrice(w http.ResponseWriter, r *http.Request) {
 func parseABI(abiJSON string) abi.ABI {
 	parsed, err := abi.JSON(strings.NewReader(abiJSON))
 	if err != nil {
-		panic(err)
+		log.Fatalf("parseABI: invalid ABI JSON: %v", err)
 	}
 	return parsed
 }
