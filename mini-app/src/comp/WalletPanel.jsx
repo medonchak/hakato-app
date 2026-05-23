@@ -101,7 +101,21 @@ export function WalletPanel({ onTradeConfigSaved }) {
           Переключитись на Mantle
         </button>
         {error && (
-          <p className="text-xs text-red-600 mt-2 text-center">{error}</p>
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-red-600 text-center">{error}</p>
+            <p className="text-[11px] text-amber-700 text-center">
+              Додай мережу вручну через{' '}
+              <a
+                href="https://chainlist.org/chain/5000"
+                target="_blank"
+                rel="noreferrer"
+                className="underline font-semibold"
+              >
+                Chainlist → Mantle
+              </a>
+              , потім повернись і натисни кнопку знову.
+            </p>
+          </div>
         )}
       </div>
     );

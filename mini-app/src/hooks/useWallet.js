@@ -7,7 +7,11 @@ const MANTLE_NETWORK = {
   chainId: MANTLE_CHAIN_ID,
   chainName: 'Mantle',
   nativeCurrency: { name: 'MNT', symbol: 'MNT', decimals: 18 },
-  rpcUrls: ['https://rpc.mantle.xyz'],
+  rpcUrls: [
+    'https://rpc.mantle.xyz',
+    'https://mantle.publicnode.com',
+    'https://mantle-mainnet.public.blastapi.io',
+  ],
   blockExplorerUrls: ['https://explorer.mantle.xyz'],
 };
 
