@@ -12,7 +12,7 @@ function shortAddr(addr) {
 }
 
 export function WalletPanel({ onTradeConfigSaved }) {
-  const { address, isMantle, balances, connecting, error, connect, disconnect, refreshBalances } = useWallet();
+  const { address, isMantle, balances, balancesError, connecting, error, connect, disconnect, refreshBalances } = useWallet();
 
   const [tradeToken, setTradeToken]   = useState('USDC');
   const [tradeAmount, setTradeAmount] = useState('');
@@ -123,6 +123,20 @@ export function WalletPanel({ onTradeConfigSaved }) {
           </button>
         </div>
       </div>
+
+      {/* Balance fetch error */}
+      {balancesError && (
+        <div className="flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2">
+          <AlertCircleIcon className="w-3.5 h-3.5 text-red-500 shrink-0" />
+          <p className="text-[10px] text-red-600 flex-1 truncate">{balancesError}</p>
+          <button
+            onClick={refreshBalances}
+            className="text-[10px] text-cyan-500 font-semibold whitespace-nowrap hover:text-cyan-600"
+          >
+            Оновити
+          </button>
+        </div>
+      )}
 
       {/* Balances */}
       <div className="grid grid-cols-3 gap-2">

@@ -27,13 +27,17 @@ export function AgentDashboard() {
         const data = await sigRes.value.json();
         setSignals(Array.isArray(data) ? data : []);
       }
-      if (stratRes.status === 'fulfilled' && stratRes.value.ok) {
+      if (stratRes.status === 'fulfilled' && stratRes.value.ok && stratRes.value.status !== 204) {
         const data = await stratRes.value.json();
         setStrategy(data);
+      } else if (stratRes.status === 'fulfilled' && stratRes.value.status === 204) {
+        setStrategy(null);
       }
-      if (posRes.status === 'fulfilled' && posRes.value.ok) {
+      if (posRes.status === 'fulfilled' && posRes.value.ok && posRes.value.status !== 204) {
         const data = await posRes.value.json();
-        setPosition(data);
+        setPosition(data?.size_usd != null ? data : null);
+      } else if (posRes.status === 'fulfilled' && posRes.value.status === 204) {
+        setPosition(null);
       }
     } catch {
       // silently continue with empty state

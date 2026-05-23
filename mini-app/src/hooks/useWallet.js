@@ -51,6 +51,7 @@ export function useWallet() {
   const [balances, setBalances] = useState({});
   const [connecting, setConnecting] = useState(false);
   const [error, setError]       = useState(null);
+  const [balancesError, setBalancesError] = useState(null);
 
   const provider = typeof window !== 'undefined' ? window.ethereum : null;
 
@@ -80,8 +81,10 @@ export function useWallet() {
         }
       }
       setBalances(next);
+      setBalancesError(null);
     } catch (e) {
       console.warn('[useWallet] fetchBalances error', e);
+      setBalancesError(e.message || 'Помилка завантаження балансів');
     }
   }, [provider]);
 
@@ -177,6 +180,7 @@ export function useWallet() {
     chainId,
     isMantle,
     balances,
+    balancesError,
     connecting,
     error,
     connect,
