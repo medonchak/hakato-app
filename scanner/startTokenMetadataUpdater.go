@@ -3,9 +3,19 @@ package main
 import (
 	"context"
 	"log"
+	"math"
 	"strings"
 	"time"
 )
+
+// clampPriceChange limits price_change to DECIMAL(10,4) range to prevent DB overflow.
+func clampPriceChange(v *float64) *float64 {
+	if v == nil {
+		return nil
+	}
+	clamped := math.Max(-99999.9999, math.Min(99999.9999, *v))
+	return &clamped
+}
 
 type TrackedToken struct {
 	ChainID int
@@ -128,7 +138,7 @@ func UpdateTokenMetadataFromScan(chainID int, tokenAddr string) error {
 		data.Transfers24h,
 		data.PriceUSD,
 		data.PriceETH,
-		data.PriceChange,
+		clampPriceChange(data.PriceChange),
 		data.OnchainMarketCap,
 		data.CirculatingMarketCap,
 		data.Decimals,

@@ -1305,7 +1305,7 @@ CREATE TABLE `tokens_metadata` (
   `contract` char(42) NOT NULL,
   `symbol` varchar(32) DEFAULT NULL,
   `decimals` int DEFAULT NULL,
-  `max_total_supply` varchar(64) DEFAULT NULL,
+  `max_total_supply` varchar(128) DEFAULT NULL,
   `holders` int DEFAULT NULL,
   `holders_change` varchar(32) DEFAULT NULL,
   `transfers_total` varchar(64) DEFAULT NULL,

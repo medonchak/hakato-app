@@ -39,7 +39,8 @@ var offset int
 func StartPolling() {
 	token := os.Getenv("TG_BOT_TOKEN")
 	if token == "" {
-		panic("TG_BOT_TOKEN not set")
+		log.Println("⚠️  TG_BOT_TOKEN not set — Telegram bot disabled")
+		return
 	}
 
 	for {

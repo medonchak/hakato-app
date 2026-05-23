@@ -113,7 +113,7 @@ func DBUpsertTokenFromAllTokens(t AllTokenJSON) error {
 	}
 	priceUSD := normalizeNumericString(t.PriceUSD)
 	priceETH := normalizeNumericString(t.PriceETH)
-	change24h := normalizeNumericString(t.Change24h)
+	change24h := normalizePercentChange(t.Change24h)
 
 	onchainMarketCap := normalizeMarketCap(t.OnchainMarketCap)
 	circulatingMarketCap := normalizeMarketCap(t.CirculatingMarketCap)
@@ -242,4 +242,19 @@ func normalizeNumericString(v string) string {
 		return "0"
 	}
 	return v
+}
+
+// normalizePercentChange is like normalizeNumericString but clamps to DECIMAL(10,4) range.
+func normalizePercentChange(v string) string {
+	s := normalizeNumericString(v)
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return "0"
+	}
+	if f > 99999.9999 {
+		f = 99999.9999
+	} else if f < -99999.9999 {
+		f = -99999.9999
+	}
+	return strconv.FormatFloat(f, 'f', 4, 64)
 }
