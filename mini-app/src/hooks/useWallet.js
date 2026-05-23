@@ -116,13 +116,22 @@ export function useWallet() {
     setConnecting(true);
     setError(null);
     try {
-      await switchToMantle();
+      // Connect account first — always works regardless of current network
       const accounts = await provider.request({ method: 'eth_requestAccounts' });
       const addr = accounts[0];
       setAddress(addr);
 
       const cid = await provider.request({ method: 'eth_chainId' });
       setChainId(cid);
+
+      // Try to switch to Mantle — non-fatal; wrong-network UI handles it
+      try {
+        await switchToMantle();
+        const newCid = await provider.request({ method: 'eth_chainId' });
+        setChainId(newCid);
+      } catch (switchErr) {
+        console.warn('[useWallet] network switch failed:', switchErr.message);
+      }
 
       await fetchBalances(addr);
     } catch (e) {
