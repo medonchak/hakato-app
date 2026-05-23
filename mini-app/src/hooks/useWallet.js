@@ -56,9 +56,25 @@ export function useWallet() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError]       = useState(null);
   const [balancesError, setBalancesError] = useState(null);
+  const [provider, setProvider] = useState(null);
 
-  // Re-read window.ethereum each render — MetaMask may inject after first paint
-  const provider = (typeof window !== 'undefined' && window.ethereum) ? window.ethereum : null;
+  // Detect window.ethereum — MetaMask injects it asynchronously after page load
+  useEffect(() => {
+    const detect = () => {
+      if (window.ethereum) { setProvider(window.ethereum); return true; }
+      return false;
+    };
+    if (detect()) return;
+    window.addEventListener('ethereum#initialized', detect, { once: true });
+    // Fallback poll — some wallets are slow
+    const t1 = setTimeout(detect, 500);
+    const t2 = setTimeout(detect, 1500);
+    return () => {
+      window.removeEventListener('ethereum#initialized', detect);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
 
   const fetchBalances = useCallback(async (addr) => {
     if (!provider || !addr) return;
@@ -114,8 +130,7 @@ export function useWallet() {
   }, [provider]);
 
   const connect = useCallback(async () => {
-    // Re-check at call time in case MetaMask injected after initial render
-    const eth = (typeof window !== 'undefined' && window.ethereum) ? window.ethereum : provider;
+    const eth = provider || window.ethereum;
     if (!eth) {
       setError('MetaMask не знайдено. Встанови розширення.');
       return;
@@ -123,7 +138,6 @@ export function useWallet() {
     setConnecting(true);
     setError(null);
     try {
-      // Connect account first — always works regardless of current network
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
       const addr = accounts[0];
       setAddress(addr);
@@ -131,7 +145,6 @@ export function useWallet() {
       const cid = await eth.request({ method: 'eth_chainId' });
       setChainId(cid);
 
-      // Try to switch to Mantle — non-fatal; wrong-network UI handles it
       try {
         await switchToMantle();
         const newCid = await eth.request({ method: 'eth_chainId' });

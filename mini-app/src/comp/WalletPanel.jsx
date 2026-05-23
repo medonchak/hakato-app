@@ -64,9 +64,17 @@ export function WalletPanel({ onTradeConfigSaved }) {
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 bg-red-50 rounded-xl p-3 mb-3">
-            <AlertCircleIcon className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-red-600">{error}</p>
+          <div className="bg-red-50 rounded-xl p-3 mb-3 space-y-1">
+            <div className="flex items-start gap-2">
+              <AlertCircleIcon className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-600">{error}</p>
+            </div>
+            {error.includes('не знайдено') && (
+              <p className="text-[11px] text-slate-500 pl-6">
+                Відкрий цю сторінку у браузері Chrome/Firefox де встановлено MetaMask,
+                або натисни кнопку нижче ще раз — гаманець міг завантажитись пізніше.
+              </p>
+            )}
           </div>
         )}
 
