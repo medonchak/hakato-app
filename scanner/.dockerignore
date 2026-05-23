@@ -1,0 +1,5 @@
+.env
+scanner.exe
+hakato
+tmp/
+*.log

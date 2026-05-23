@@ -1,0 +1,55 @@
+services:
+
+  # ── MySQL ────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: hakato-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 1111
+      MYSQL_DATABASE: mini-app
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p1111"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # ── Go Backend ───────────────────────────────────────────
+  backend:
+    build:
+      context: ./scanner
+      dockerfile: Dockerfile
+    container_name: hakato-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_DSN: root:1111@tcp(mysql:3306)/mini-app?parseTime=true&charset=utf8mb4&loc=Local&interpolateParams=true
+      TG_BOT_TOKEN:      ${TG_BOT_TOKEN:-}
+      TG_ADMIN_CHAT_ID:  ${TG_ADMIN_CHAT_ID:-}
+      AGENT_ENABLED:     ${AGENT_ENABLED:-false}
+      SIGNAL_REGISTRY_ADDR: ${SIGNAL_REGISTRY_ADDR:-}
+      ANOMALY_LOGGER_ADDR:  ${ANOMALY_LOGGER_ADDR:-}
+      AGENT_WALLET_ADDR:    ${AGENT_WALLET_ADDR:-}
+      AGENT_PRIVATE_KEY:    ${AGENT_PRIVATE_KEY:-}
+    ports:
+      - "8080:8080"
+
+  # ── React Frontend ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./mini-app
+      dockerfile: Dockerfile
+    container_name: hakato-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  mysql_data:

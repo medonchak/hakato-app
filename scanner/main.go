@@ -262,7 +262,11 @@ func main() {
 
 	// тримає процес живим
 
-	err := InitDB("root:1111@tcp(127.0.0.1:3306)/mini-app?parseTime=true&charset=utf8mb4&loc=Local&interpolateParams=true")
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		dsn = "root:1111@tcp(127.0.0.1:3306)/mini-app?parseTime=true&charset=utf8mb4&loc=Local&interpolateParams=true"
+	}
+	err := InitDB(dsn)
 	if err != nil {
 		log.Fatal("❌ DB ERROR: ", err)
 	}

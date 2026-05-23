@@ -1,3 +1,4 @@
+/* global BigInt */
 import { useState, useEffect, useCallback } from 'react';
 
 const MANTLE_CHAIN_ID = '0x1388'; // 5000 decimal
