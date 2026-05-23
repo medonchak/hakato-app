@@ -147,6 +147,17 @@ export function useWallet() {
     setChainId(null);
   }, []);
 
+  const switchNetwork = useCallback(async () => {
+    try {
+      await switchToMantle();
+      const cid = await provider.request({ method: 'eth_chainId' });
+      setChainId(cid);
+      if (address) fetchBalances(address);
+    } catch (e) {
+      setError(e.message || 'Не вдалось переключити мережу');
+    }
+  }, [provider, switchToMantle, address, fetchBalances]);
+
   const refreshBalances = useCallback(() => fetchBalances(address), [fetchBalances, address]);
 
   // Listen for account/chain changes
@@ -194,6 +205,7 @@ export function useWallet() {
     error,
     connect,
     disconnect,
+    switchNetwork,
     refreshBalances,
   };
 }

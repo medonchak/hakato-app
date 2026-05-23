@@ -95,7 +95,7 @@ export function AgentDashboard() {
       )}
 
       {/* Position & PnL */}
-      {position && (
+      {position?.size_usd != null && (
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 text-white">
           <p className="text-xs text-slate-400 mb-1">Поточна позиція</p>
           <div className="flex justify-between items-end">
@@ -122,7 +122,7 @@ export function AgentDashboard() {
       )}
 
       {/* Strategy card */}
-      {strategy && (
+      {strategy?.vwap_period != null && (
         <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <ActivityIcon className="w-4 h-4 text-cyan-500" />

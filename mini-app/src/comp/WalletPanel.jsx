@@ -12,7 +12,7 @@ function shortAddr(addr) {
 }
 
 export function WalletPanel({ onTradeConfigSaved }) {
-  const { address, isMantle, balances, balancesError, connecting, error, connect, disconnect, refreshBalances } = useWallet();
+  const { address, isMantle, balances, balancesError, connecting, error, connect, disconnect, switchNetwork, refreshBalances } = useWallet();
 
   const [tradeToken, setTradeToken]   = useState('USDC');
   const [tradeAmount, setTradeAmount] = useState('');
@@ -95,11 +95,14 @@ export function WalletPanel({ onTradeConfigSaved }) {
         </div>
         <p className="text-xs text-amber-600 mb-3">Переключись на Mantle (chainId 5000)</p>
         <button
-          onClick={connect}
+          onClick={switchNetwork}
           className="w-full py-2.5 rounded-xl bg-amber-400 text-white text-sm font-semibold hover:bg-amber-500 transition-colors"
         >
           Переключитись на Mantle
         </button>
+        {error && (
+          <p className="text-xs text-red-600 mt-2 text-center">{error}</p>
+        )}
       </div>
     );
   }
