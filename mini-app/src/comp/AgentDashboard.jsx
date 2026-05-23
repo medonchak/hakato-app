@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContai
 import { TrendingUpIcon, TrendingDownIcon, ActivityIcon, ExternalLinkIcon } from 'lucide-react';
 import { WalletPanel } from './WalletPanel';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API = process.env.REACT_APP_API_URL || '';
 
 export function AgentDashboard() {
   const [signals, setSignals] = useState([]);

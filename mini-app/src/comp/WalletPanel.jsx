@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { WalletIcon, RefreshCwIcon, XIcon, CheckIcon, AlertCircleIcon } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API = process.env.REACT_APP_API_URL || '';
 
 const TOKENS = ['MNT', 'mETH', 'USDY', 'USDC', 'USDT'];
 const PCT_PRESETS = [25, 50, 75, 100];
